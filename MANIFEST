@@ -1,0 +1,15 @@
+ignore.txt
+lib/Template/Swig.pm
+Makefile.PL
+MANIFEST			This list of files
+README.md
+t/00-load.t
+t/boilerplate.t
+t/inheritance.t
+t/manifest.t
+t/negative.t
+t/pod-coverage.t
+t/pod.t
+t/template.t
+META.yml                                 Module YAML meta-data (added by MakeMaker)
+META.json                                Module JSON meta-data (added by MakeMaker)
