@@ -13,10 +13,17 @@ WriteMakefile(
       : ()),
     PL_FILES            => {},
     PREREQ_PM => {
+        'Test::Exception' => 0,
         'Test::More'      => 0,
+	'File::Slurp'     => 0,
 	'JSON::XS'        => 0,
 	'Test::Exception' => 0,
 	'JavaScript::V8'  => 0
+    },
+    META_MERGE => {
+        resources => {
+            repository => 'https://github.com/dchester/perl-template-swig'
+        }
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'Template-Swig-*' },
