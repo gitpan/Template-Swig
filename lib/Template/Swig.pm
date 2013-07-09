@@ -5,7 +5,7 @@ use warnings;
 
 use Carp;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 use File::Slurp qw(read_file);
 use JavaScript::V8;
@@ -41,7 +41,7 @@ sub _load_swig {
 				}
 			};
 EOT
-		$self->{context}->bind_function('perl_callback' => sub {
+		$self->{context}->bind('perl_callback' => sub {
 			my ($filename, $encoding) = @_;
 			my $template;
 			my $error = do {
@@ -131,14 +131,14 @@ Template::Swig - Perl interface to Django-inspired Swig templating engine.
 
   my $swig = Template::Swig->new;
 
-  $swig->compile('Welcome, {{name}}', 'message');
+  $swig->compile('message', 'Welcome, {{name}}');
   my $output = $swig->render('message', { name => 'Arthur' });
 
 =head1 DESCRIPTION
 
 Template::Swig uses L<JavaScript::V8> and L<Paul Armstrong's Swig|https://github.com/paularmstrong/swig/> templating engine to provide fast Django-inspired templating in a Perl context.  Templates are compiled to JavaScript functions and stored in memory, then executed each time they're rendered.
 
-Swig's feature list includes multiple inheritance, formatter and helper functions, macros, auto-escaping, and custom tags.  See the L<Swig Documentation|https://github.com/paularmstrong/swig/blob/master/docs/README.md> for more.
+Swig's feature list includes multiple inheritance, formatter and helper functions, macros, auto-escaping, and custom tags.  See the L<Swig Documentation|https://github.com/paularmstrong/swig/blob/master/README.md> for more.
 
 =head1 METHODS
 
