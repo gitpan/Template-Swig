@@ -5,7 +5,7 @@ use warnings;
 
 use Carp;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 use File::Slurp qw(read_file);
 use JavaScript::V8;
@@ -19,6 +19,7 @@ sub new {
 
 	$self->{context} = JavaScript::V8::Context->new();
 	$self->{json} = JSON::XS->new->allow_nonref;
+	$self->{json}->canonical(1); # Make sure that a given struct is always encoded the same way
 	$self->{extends_callback} = $params{extends_callback};
 	$self->{template_dir} = $params{template_dir};
 
@@ -66,12 +67,12 @@ EOT
 
 sub compileFromFile {
 
-  my ($self, $filename) = @_;
-	my $template_name = $filename;
+	my ($self, $f) = @_;
+	my $filename = ref($f) ? $f->{filename} : $f;
 	$filename = join('/',$self->{template_dir}, $filename) if $self->{template_dir};
 	if ( -e $filename ) {
 		my $template = read_file($filename);
-		$self->compile($template_name, $template);
+		$self->compile($f, $template);
 	} else {
 		die "Unable to locate $filename";
 	}
@@ -87,6 +88,11 @@ sub compile {
 	die "need a template_name" unless $template_name;
 	my $template_name_json = $self->{json}->encode($template_name);
 
+	if (ref $template_name) {
+		$template_name_json =~ s/'/\\'/g;
+		$template_name_json = "'$template_name_json'";
+	}
+
 	$self->{context}->eval(<<EOT);
 	var template_string = $template_string_json;
 	var template = swig.compile(template_string, { filename: $template_name_json });
@@ -96,17 +102,21 @@ sub compile {
 EOT
 	confess $@ if $@;
 
-	$self->{$template_name} = 1;
+	$self->{is_compiled}{$template_name_json} = 1;
 }
 
 sub render {
 
-	my ($self, $template_name, $data, %args) = @_;
+	my ($self, $template_name, $data) = @_;
 
 	die "need a template_name" unless $template_name;
 	my $template_name_json = $self->{json}->encode($template_name);
+	if (ref $template_name) {
+		$template_name_json =~ s/'/\\'/g;
+		$template_name_json = "'$template_name_json'";
+	}
 
-	die "couldn't find template: $template_name" unless $self->{$template_name};
+	die "couldn't find template: $template_name" unless $self->{is_compiled}{$template_name_json};
 
 	my $data_json = $self->{json}->encode($data);
 
@@ -131,8 +141,13 @@ Template::Swig - Perl interface to Django-inspired Swig templating engine.
 
   my $swig = Template::Swig->new;
 
+  # Compile and render an inline template:
   $swig->compile('message', 'Welcome, {{name}}');
   my $output = $swig->render('message', { name => 'Arthur' });
+
+  # Compile and render a file:
+  $swig->compileFromFile('path/to/file.html');
+  my $output = $swig->render('path/to/file.html', { some_param => 'foo' });
 
 =head1 DESCRIPTION
 
@@ -158,10 +173,14 @@ Optional callback to be run when Swig encounters an extends tag; receives filena
 
 Compile a template given, given a template name and swig template source as a string.
 
-=head2 compile($file_name)
+=head2 compileFromFile($f)
 
-Will compile a file from the file system. In order for this to work an extends_callback,
-needs to be implemented.
+Will compile a file from the filesystem. C<$f> may be either a scalar filename,
+or a reference to a hash with at least one key, C<filename>.
+
+=head2 compile($string)
+
+Will compile data supplied in the scalar C<$string>.
 
 =head2 render($template_name, $data)
 
